@@ -11,13 +11,24 @@ int main(int argc, char **argv) {
 
   Halide::Func proc;
   Halide::Var x, y, c;
+  Halide::Func float_px;
+  
+  // Converte para float em [0,1]
+  float_px(x, y, c) = Halide::cast<float>(input(x, y, c) / 255.0f);
 
-  //TODO: calcular o threshold
-  //proc(x, y, c) = xxxxxx;
+  // Faz a alteracao
+  Halide::Expr gray = 0.299f * float_px(x, y, 0) + // Altera o canal vermelho 
+                      0.587f * float_px(x, y, 1) + // Altera o canal verde
+                      0.114f * float_px(x, y, 2);  // Altera o canal azul
+  
+  // Converte para inteiro
+  Halide::Expr thresholded = Halide::cast<uint8_t>(gray > threshold) * 255;
+  
+  proc(x, y, c) = thresholded;
 
   try {
     Halide::Buffer<uint8_t> output = proc.realize({input.width(), input.height(), input.channels()});
-    Halide::Tools::save_image(output, "bird_binary.png");
+    Halide::Tools::save_image(output, "bird_threshold.png");
   }
   catch (Halide::CompileError& e){
     std::cout << "Halide::CompileError: " << e.what();

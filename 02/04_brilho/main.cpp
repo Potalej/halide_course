@@ -10,12 +10,26 @@ int main(int argc, char **argv) {
   Halide::Func proc, float_px;
   Halide::Var x, y, c;
 
-  //TODO: implementar
-  //proc(x, y, c) = xxx;
+  // O quanto de brilho quer aumentar
+  float brightness = 0.3f;
+  
+  // Transforma em float
+  float_px(x,y,c) = Halide::cast<float>(input(x,y,c) / 255.0f);
+  
+  // Aumenta o brilho
+  Halide::Expr convert_brightness = float_px(x,y,c) + brightness;
+  convert_brightness = Halide::max(convert_brightness, 0);
+  convert_brightness = Halide::min(convert_brightness, 1);
+
+  // Converte para int
+  Halide::Expr uint_px = Halide::cast<uint8_t>(convert_brightness * 255);
+
+  //Implementa
+  proc(x, y, c) = uint_px;
 
   try {
     Halide::Buffer<uint8_t> output = proc.realize({input.width(), input.height(), input.channels()});
-    Halide::Tools::save_image(output, "bird_brighter.png");
+    Halide::Tools::save_image(output, "bird_claro.png");
   }
   catch (Halide::CompileError& e){
     std::cout << "Halide::CompileError: " << e.what();
